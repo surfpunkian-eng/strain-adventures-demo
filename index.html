@@ -10,193 +10,633 @@
       --green:#1f7a3f;
       --dark:#0f3d24;
       --cream:#f6f3ec;
+      --panel:#ffffffcc;
+      --line:#0f3d2430;
+      --shadow:0 10px 25px rgba(0,0,0,.12);
+      --select:#f59f00;
+      --danger:#d7263d;
     }
+
     body{
       margin:0;
       font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-      background:var(--cream);
-      color:#222;
+      background:radial-gradient(circle at 20% 0%, #eaf5ee 0%, var(--cream) 55%);
+      color:#182018;
     }
+
     header{
-      background:var(--green);
+      background:linear-gradient(90deg, var(--green), #2a9b54);
       color:#fff;
       padding:12px 16px;
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:12px;
+      gap:10px;
       flex-wrap:wrap;
     }
     header strong{ font-size:18px; }
+    header .meta{ opacity:.95; font-size:13px; }
+
     main{
-      max-width:900px;
+      max-width:1140px;
       margin:0 auto;
-      padding:16px;
+      padding:14px;
+      display:grid;
+      grid-template-rows:auto auto;
+      gap:12px;
     }
-    .zone{ margin-bottom:16px; }
-    .zone h3{
-      margin:0 0 8px 0;
-      color:var(--dark);
+
+    .row{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      padding:12px;
     }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#0f3d2412;
+      border:1px solid #0f3d2420;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .stats{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      font-size:12px;
+    }
+    .stat{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:10px;
+      background:#fff;
+      border:1px solid var(--line);
+    }
+    .stat b{ font-size:13px; }
+
+    .zones{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:12px;
+    }
+    @media (max-width: 1020px){
+      .zones{ grid-template-columns:1fr; }
+    }
+
     .cards{
       display:flex;
-      gap:8px;
+      gap:10px;
       flex-wrap:wrap;
-      min-height:160px;
+      min-height:200px;
+      align-items:flex-start;
     }
+
+    /* CARD UI */
     .card{
-      width:110px;
-      height:150px;
-      background:#fff;
-      border-radius:8px;
-      border:2px solid var(--dark);
-      padding:6px;
-      box-sizing:border-box;
+      width:150px;
+      height:220px;
+      border-radius:14px;
+      position:relative;
+      overflow:hidden;
+      border:2px solid #0f3d2440;
+      box-shadow:0 10px 18px rgba(0,0,0,.14);
       cursor:pointer;
+      transform:translateY(0);
+      transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, opacity .12s ease;
+      background:#fff;
       user-select:none;
     }
-    .card.played{
-      background:#dff2e6;
-      cursor:default;
+    .card:hover{ transform:translateY(-3px); box-shadow:0 14px 24px rgba(0,0,0,.18); }
+    .card:active{ transform:translateY(-1px); }
+
+    .card.disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      transform:none !important;
+      box-shadow:0 6px 14px rgba(0,0,0,.08) !important;
     }
-    .card h4{
+
+    .card.selected{
+      border-color: var(--select);
+      box-shadow:0 14px 28px rgba(245,159,0,.28);
+    }
+
+    .card img.artImg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    /* Small overlay label used only when a card has no art yet */
+    .fallbackOverlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      padding:10px;
+      pointer-events:none;
+    }
+    .fallbackTitle{
+      background:rgba(0,0,0,.50);
+      color:#fff;
+      padding:6px 8px;
+      border-radius:10px;
       font-size:12px;
-      margin:0 0 4px 0;
-      line-height:1.2;
+      font-weight:900;
+      line-height:1.1;
+      text-transform:uppercase;
+      letter-spacing:.4px;
     }
-    .card p{
+    .fallbackMeta{
+      background:rgba(255,255,255,.92);
+      color:#122;
+      padding:6px 8px;
+      border-radius:10px;
       font-size:11px;
-      margin:0;
-      line-height:1.2;
-      opacity:0.9;
+      font-weight:900;
+      border:1px solid rgba(0,0,0,.12);
+      align-self:flex-end;
     }
+
+    /* ACTIONS + LOG */
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+      align-items:center;
+    }
+
     button{
       background:var(--green);
       color:#fff;
       border:none;
-      border-radius:6px;
-      padding:10px 14px;
+      border-radius:10px;
+      padding:10px 12px;
       font-size:14px;
+      font-weight:900;
       cursor:pointer;
     }
-    button:disabled{
-      background:#999;
-      cursor:not-allowed;
+    button.secondary{
+      background:#0f3d2415;
+      color:#0f3d24;
+      border:1px solid #0f3d2425;
     }
+    button.danger{
+      background:var(--danger);
+    }
+    button:disabled{ opacity:.45; cursor:not-allowed; }
+
     .hint{
-      margin-top:10px;
       font-size:12px;
-      color:#444;
-      opacity:0.9;
+      color:#244;
+      opacity:.9;
+      padding:6px 2px;
     }
-    footer{
-      text-align:center;
+
+    .log{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      min-height:160px;
       font-size:12px;
-      padding:12px;
-      color:#555;
+      line-height:1.35;
     }
+    .log .item{ padding:6px 0; border-bottom:1px dashed #0f3d241d; }
+    .log .item:last-child{ border-bottom:none; }
+
+    footer{ text-align:center; font-size:12px; padding:10px; color:#555; }
   </style>
 </head>
 
 <body>
-  <header>
-    <strong>Strain Adventures</strong>
-    <span>Demo version · by PapaHerb</span>
-  </header>
+<header>
+  <strong>Strain Adventures</strong>
+  <span class="meta">Demo version · by PapaHerb</span>
+</header>
 
-  <main>
-    <div class="zone">
-      <h3>Your Hand</h3>
-      <div id="hand" class="cards"></div>
+<main>
+  <!-- OPPONENT -->
+  <section class="row">
+    <div class="topbar">
+      <div class="pill" id="oppPill">Opponent · Waiting</div>
+      <div class="stats" id="oppStats"></div>
+    </div>
+    <div class="cards" id="oppBoard"></div>
+  </section>
+
+  <!-- YOU + ACTIONS + LOG -->
+  <section class="row zones">
+    <div>
+      <div class="topbar">
+        <div class="pill" id="turnPill">Your Turn · Phase: Play</div>
+        <div class="stats" id="youStats"></div>
+      </div>
+
+      <div class="actions">
+        <button id="playBtn">Play Selected Card</button>
+        <button id="attackBtn" class="secondary">Attack (demo)</button>
+        <button id="endTurnBtn" disabled>End Turn</button>
+        <button id="restartBtn" class="secondary">Restart Simulation</button>
+      </div>
+
+      <div class="hint" id="hint">Tip: click a card in your hand to select it, then Play. You can either Play or Attack each turn.</div>
+
+      <div style="font-weight:900; color:#0f3d24; margin:8px 0 6px;">Your Board</div>
+      <div class="cards" id="youBoard"></div>
+
+      <div style="font-weight:900; color:#0f3d24; margin:10px 0 6px;">Your Hand</div>
+      <div class="cards" id="youHand"></div>
+
+      <footer>
+        Images live under <code>/assets/cards/</code> (e.g. <code>dogs-bollocks.jpg</code>, <code>grandaddy-purp.jpg</code>)
+      </footer>
     </div>
 
-    <div class="zone">
-      <h3>Cards in Play</h3>
-      <div id="board" class="cards"></div>
+    <div>
+      <div style="font-weight:900; margin-bottom:8px; color:#0f3d24;">Game Log</div>
+      <div class="log" id="log"></div>
     </div>
+  </section>
+</main>
 
-    <button id="endTurnBtn" disabled>End Turn</button>
-    <div class="hint" id="hint">Tip: click one card to play it. End Turn becomes available after a play.</div>
-  </main>
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  // --- CONFIG ---
+  const CARD_BACK = "./assets/cards/card-back.jpg";
 
-  <footer>
-    Single-file demo · No backend · Proof of concept
-  </footer>
+  // If a card has an image, we assume its text is baked into the artwork.
+  // For cards without images yet, we show a minimal overlay (name + rarity).
+  const ALL_CARDS = [
+    { id: 101, name: "Dogs Bollocks",   rarity: "common",    power: 12, image: "./assets/cards/dogs-bollocks.jpg" },
+    { id: 102, name: "Grandaddy Purp", rarity: "common",    power: 14, image: "./assets/cards/grandaddy-purp.jpg" },
 
-  <script>
-    // Hardened init: ensures DOM exists before we query elements
-    window.addEventListener("DOMContentLoaded", () => {
-      // Use plain ASCII quotes to avoid encoding edge cases
-      const cards = [
-        { id: 1, name: "Pink Malawi",    text: "Boosts energy this turn." },
-        { id: 2, name: "Papa's Choice",  text: "Draw one extra card." },
-        { id: 3, name: "Dead Card",      text: "No effect." },
-        { id: 4, name: "Special Ability",text: "Play twice this turn." },
-        { id: 5, name: "Strain Power",   text: "Control the board." },
-        { id: 6, name: "Herb Stack",     text: "Score bonus points." }
-      ];
+    // placeholders for expansion
+    { id: 201, name: "Star Dawg",      rarity: "common",    power: 10, image: "" },
+    { id: 202, name: "Gorilla Glue",   rarity: "common",    power: 9,  image: "" },
+    { id: 203, name: "RS-11",          rarity: "rare",      power: 18, image: "" },
+    { id: 204, name: "White Widow",    rarity: "epic",      power: 35, image: "" },
+    { id: 205, name: "Pink Malawi",    rarity: "legendary", power: 70, image: "" }
+  ];
 
-      let hand = cards.slice(0, 6);
-      let board = [];
-      let playedThisTurn = false;
+  const RARITY_HP = {
+    common: 100,
+    uncommon: 120,
+    rare: 150,
+    ultra: 175,
+    epic: 200,
+    legendary: 250
+  };
 
-      const handEl = document.getElementById("hand");
-      const boardEl = document.getElementById("board");
-      const endTurnBtn = document.getElementById("endTurnBtn");
-      const hintEl = document.getElementById("hint");
+  // --- STATE ---
+  const state = {
+    turn: 1,
+    phase: "Play",
+    you: {
+      hp: 200,
+      deck: [],
+      hand: [],
+      board: [],
+      graveyard: [],
+      actedThisTurn: false,
+      chose: null, // "play" | "attack"
+      selectedCardId: null
+    },
+    opp: {
+      hp: 200,
+      deck: [],
+      handCount: 0,
+      board: [],
+      graveyard: [],
+      lastAction: "Waiting"
+    },
+    log: []
+  };
 
-      function render() {
-        handEl.innerHTML = "";
-        boardEl.innerHTML = "";
+  // --- DOM ---
+  const youHandEl = document.getElementById("youHand");
+  const youBoardEl = document.getElementById("youBoard");
+  const oppBoardEl = document.getElementById("oppBoard");
+  const youStatsEl = document.getElementById("youStats");
+  const oppStatsEl = document.getElementById("oppStats");
+  const logEl = document.getElementById("log");
+  const turnPillEl = document.getElementById("turnPill");
+  const oppPillEl = document.getElementById("oppPill");
+  const hintEl = document.getElementById("hint");
 
-        hand.forEach(card => {
-          const el = document.createElement("div");
-          el.className = "card";
-          el.innerHTML = `<h4>${escapeHtml(card.name)}</h4><p>${escapeHtml(card.text)}</p>`;
-          el.addEventListener("click", () => playCard(card.id));
-          handEl.appendChild(el);
-        });
+  const playBtn = document.getElementById("playBtn");
+  const attackBtn = document.getElementById("attackBtn");
+  const endTurnBtn = document.getElementById("endTurnBtn");
+  const restartBtn = document.getElementById("restartBtn");
 
-        board.forEach(card => {
-          const el = document.createElement("div");
-          el.className = "card played";
-          el.innerHTML = `<h4>${escapeHtml(card.name)}</h4><p>${escapeHtml(card.text)}</p>`;
-          boardEl.appendChild(el);
-        });
+  // --- HELPERS ---
+  const shuffle = (arr) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
 
-        endTurnBtn.disabled = !playedThisTurn;
-        hintEl.textContent = playedThisTurn
-          ? "Nice — click End Turn to continue."
-          : "Tip: click one card to play it. End Turn becomes available after a play.";
-      }
+  const boardPower = (cards) => cards.reduce((sum, c) => sum + (c.power || 0), 0);
 
-      function playCard(id) {
-        if (playedThisTurn) return;
-        const index = hand.findIndex(c => c.id === id);
-        if (index === -1) return;
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
 
-        board.push(hand[index]);
-        hand.splice(index, 1);
-        playedThisTurn = true;
-        render();
-      }
+  function addLog(text){
+    state.log.unshift({ t: Date.now(), text });
+    state.log = state.log.slice(0, 10);
+    renderLog();
+  }
 
-      endTurnBtn.addEventListener("click", () => {
-        playedThisTurn = false;
-        render();
-      });
+  function renderLog(){
+    logEl.innerHTML = state.log
+      .map(item => `<div class="item">${escapeHtml(item.text)}</div>`)
+      .join("");
+  }
 
-      function escapeHtml(str) {
-        return String(str)
-          .replaceAll("&","&amp;")
-          .replaceAll("<","&lt;")
-          .replaceAll(">","&gt;")
-          .replaceAll('"',"&quot;")
-          .replaceAll("'","&#039;");
-      }
+  function drawCard(player){
+    if (!player.deck.length) return null;
+    return player.deck.shift();
+  }
 
-      render();
+  function cardById(arr, id){
+    return arr.find(c => c.id === id);
+  }
+
+  function preloadImages(cards){
+    cards.forEach(c => {
+      const src = (c.image && c.image.trim()) ? c.image : CARD_BACK;
+      const img = new Image();
+      img.src = src;
     });
-  </script>
+  }
+
+  // --- RENDER ---
+  function render(){
+    turnPillEl.textContent = `Your Turn · Turn ${state.turn} · Phase: ${state.phase}`;
+    oppPillEl.textContent = `Opponent · ${state.opp.lastAction}`;
+
+    youStatsEl.innerHTML = renderStats(state.you, "You");
+    oppStatsEl.innerHTML = renderStats(state.opp, "Opp");
+
+    youBoardEl.innerHTML = state.you.board.map(c => cardHtml(c, { zone:"board" })).join("");
+    oppBoardEl.innerHTML = state.opp.board.map(c => cardHtml(c, { zone:"oppBoard" })).join("");
+    youHandEl.innerHTML  = state.you.hand.map(c => cardHtml(c, { zone:"hand" })).join("");
+
+    // Hand selection handlers
+    [...youHandEl.querySelectorAll(".card")].forEach(el => {
+      const id = Number(el.getAttribute("data-id"));
+      const disabled = el.classList.contains("disabled");
+      if (!disabled){
+        el.addEventListener("click", () => {
+          state.you.selectedCardId = id;
+          const c = cardById(state.you.hand, id);
+          addLog(`Selected: ${c ? c.name : "card"}`);
+          render();
+        });
+      }
+    });
+
+    // Button gating (max 4 in play; choose attack OR play each turn)
+    const boardFull = state.you.board.length >= 4;
+    const hasSelection = !!state.you.selectedCardId;
+
+    playBtn.disabled = (!hasSelection || boardFull || state.you.chose === "attack");
+    attackBtn.disabled = (state.you.chose === "play");
+    endTurnBtn.disabled = !state.you.actedThisTurn;
+
+    // Hint
+    if (state.you.chose === "attack") {
+      hintEl.textContent = "You chose to Attack this turn. End your turn to let the opponent respond.";
+    } else if (state.you.chose === "play") {
+      hintEl.textContent = "You played a card this turn. End your turn to let the opponent respond.";
+    } else {
+      hintEl.textContent = "Tip: click a card in your hand to select it, then Play. You can either Play or Attack each turn.";
+    }
+  }
+
+  function renderStats(p, label){
+    const deckCount = p.deck ? p.deck.length : 0;
+    const power = boardPower(p.board || []);
+    const grave = (p.graveyard || []).length;
+    const handCount = p.hand ? p.hand.length : (p.handCount || 0);
+
+    return `
+      <div class="stat">${label} HP: <b>${p.hp}</b></div>
+      <div class="stat">Board Power: <b>${power}</b></div>
+      <div class="stat">Hand: <b>${handCount}</b></div>
+      <div class="stat">Deck: <b>${deckCount}</b></div>
+      <div class="stat">Graveyard: <b>${grave}</b></div>
+    `;
+  }
+
+  function cardHtml(card, ctx){
+    const isHand = ctx.zone === "hand";
+    const boardFull = state.you.board.length >= 4;
+    const disableHandCard = (isHand && (state.you.chose === "attack" || boardFull));
+    const selected = (isHand && state.you.selectedCardId === card.id) ? "selected" : "";
+
+    const hasArt = !!(card.image && card.image.trim());
+    const src = hasArt ? card.image : CARD_BACK;
+
+    const rarity = (card.rarity || "common").toLowerCase();
+    const hp = RARITY_HP[rarity] ?? 100;
+
+    // If art exists, we keep overlays minimal (text is baked into the artwork).
+    // If art doesn't exist yet, show a small overlay for clarity.
+    const overlay = hasArt ? "" : `
+      <div class="fallbackOverlay">
+        <div class="fallbackTitle">${escapeHtml(card.name)}</div>
+        <div class="fallbackMeta">${escapeHtml(rarity.toUpperCase())} · HP ${hp} · PWR ${card.power}</div>
+      </div>
+    `;
+
+    return `
+      <div class="card ${disableHandCard ? "disabled" : ""} ${selected}" data-id="${card.id}">
+        <img class="artImg" src="${src}" alt="${escapeHtml(card.name)}" onerror="this.onerror=null; this.src='${CARD_BACK}';"/>
+        ${overlay}
+      </div>
+    `;
+  }
+
+  // --- GAME ACTIONS ---
+  playBtn.addEventListener("click", () => {
+    if (state.you.chose === "attack") return;
+    const id = state.you.selectedCardId;
+    if (!id) return;
+
+    if (state.you.board.length >= 4){
+      addLog("Board is full (max 4 in play).");
+      return;
+    }
+
+    const idx = state.you.hand.findIndex(c => c.id === id);
+    if (idx === -1) return;
+
+    const [c] = state.you.hand.splice(idx, 1);
+    state.you.board.push(c);
+
+    state.you.chose = "play";
+    state.you.actedThisTurn = true;
+    state.you.selectedCardId = null;
+    addLog(`You played ${c.name} (+${c.power} board power).`);
+    render();
+  });
+
+  attackBtn.addEventListener("click", () => {
+    if (state.you.chose === "play") return;
+
+    state.you.chose = "attack";
+    state.you.actedThisTurn = true;
+
+    // Demo attack damage based on board power (keeps feedback visible)
+    const dmg = Math.max(5, Math.floor(boardPower(state.you.board) / 10));
+    state.opp.hp = Math.max(0, state.opp.hp - dmg);
+    addLog(`You attacked! Opponent takes ${dmg} damage.`);
+    render();
+  });
+
+  endTurnBtn.addEventListener("click", async () => {
+    addLog("End Turn.");
+
+    // Reset your per-turn choice
+    state.you.actedThisTurn = false;
+    state.you.chose = null;
+    state.you.selectedCardId = null;
+
+    await opponentTurn();
+
+    // Start next turn: you draw 1
+    const drawn = drawCard(state.you);
+    if (drawn) {
+      state.you.hand.push(drawn);
+      addLog(`You drew: ${drawn.name}`);
+    } else {
+      addLog("Your deck is empty.");
+    }
+
+    state.turn += 1;
+    render();
+  });
+
+  restartBtn.addEventListener("click", () => {
+    resetGame(true);
+  });
+
+  // --- OPPONENT TURN (FAKE BUT BELIEVABLE) ---
+  async function opponentTurn(){
+    state.opp.lastAction = "Thinking…";
+    render();
+
+    await wait(650);
+
+    // Opponent draws 1
+    if (state.opp.deck.length > 0){
+      drawCard(state.opp);
+      state.opp.handCount += 1;
+    }
+
+    const oppBoardFull = state.opp.board.length >= 4;
+    const willPlay = (!oppBoardFull && Math.random() < 0.7);
+
+    if (willPlay && state.opp.handCount > 0){
+      // Play a visible card to the opponent board
+      const c = drawCard(state.opp);
+      if (c){
+        state.opp.board.push(c);
+        state.opp.handCount = Math.max(0, state.opp.handCount - 1);
+        state.opp.lastAction = `Played ${c.name}`;
+        addLog(`Opponent played a card (${c.rarity.toUpperCase()}).`);
+      } else {
+        state.opp.lastAction = "No card to play";
+        addLog("Opponent tried to play but deck was empty.");
+      }
+    } else {
+      // Attack demo
+      const dmg = Math.max(5, Math.floor(boardPower(state.opp.board) / 10));
+      state.you.hp = Math.max(0, state.you.hp - dmg);
+      state.opp.lastAction = `Attacked (-${dmg} HP)`;
+      addLog(`Opponent attacked! You take ${dmg} damage.`);
+    }
+
+    await wait(250);
+    render();
+  }
+
+  function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
+
+  // --- RESET / INIT ---
+  function resetGame(fromButton=false){
+    state.turn = 1;
+    state.phase = "Play";
+    state.log = [];
+
+    state.you.hp = 200;
+    state.opp.hp = 200;
+
+    state.you.graveyard = [];
+    state.opp.graveyard = [];
+
+    state.you.actedThisTurn = false;
+    state.you.chose = null;
+    state.you.selectedCardId = null;
+    state.opp.lastAction = "Waiting";
+
+    // Build decks (duplicate list to make a thicker deck)
+    state.you.deck = shuffle([...ALL_CARDS, ...ALL_CARDS, ...ALL_CARDS].map(c => ({...c})));
+    state.opp.deck = shuffle([...ALL_CARDS, ...ALL_CARDS, ...ALL_CARDS].map(c => ({...c})));
+
+    // Start with 2 in play each
+    state.you.board = [drawCard(state.you), drawCard(state.you)].filter(Boolean);
+    state.opp.board = [drawCard(state.opp), drawCard(state.opp)].filter(Boolean);
+
+    // Deal opening hand
+    state.you.hand = [];
+    for (let i=0;i<6;i++){
+      const c = drawCard(state.you);
+      if (c) state.you.hand.push(c);
+    }
+
+    state.opp.handCount = 6;
+
+    preloadImages(ALL_CARDS);
+
+    if (fromButton) addLog("Restarted simulation: new shuffle, new opening state.");
+    else addLog("Game start: 2 cards in play each. Your turn.");
+
+    render();
+  }
+
+  resetGame(false);
+});
+</script>
 </body>
 </html>
