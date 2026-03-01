@@ -3,51 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <title>Strain Adventures – Demo</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #1e1e1e;
-      color: #fff;
+      background: #1b1b1b;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
       text-align: center;
     }
-    h1 { margin-top: 10px; }
+
+    h1 {
+      margin: 12px 0;
+    }
+
     .zone {
-      margin: 10px auto;
+      margin: 12px auto;
       padding: 10px;
       border: 1px solid #444;
-      max-width: 900px;
+      max-width: 960px;
+      background: #222;
     }
+
     .cards {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      flex-wrap: wrap;
     }
+
     .card {
       width: 120px;
-      cursor: pointer;
       border-radius: 6px;
-      transition: transform 0.2s;
+      cursor: pointer;
+      transition: transform 0.15s ease;
     }
+
     .card:hover {
       transform: scale(1.05);
     }
+
     button {
+      margin: 6px;
       padding: 8px 14px;
-      margin: 5px;
       cursor: pointer;
-    }
-    .stats {
-      margin-top: 5px;
+      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
+
   <h1>Strain Adventures – POC</h1>
 
   <div class="zone">
-    <strong>Coins:</strong> <span id="coins">100</span>
+    <strong>Coins:</strong> <span id="coins">0</span>
   </div>
 
   <div class="zone">
@@ -68,20 +79,11 @@
 
 <script>
 /* =========================
-   CARD DATA (DECK)
+   GLOBAL STATE
    ========================= */
 
-const DECK = [
-  { id: "gushers", name: "Gushers", rarity: "Ultra Rare" },
-  { id: "girl-scout-cookies", name: "Girl Scout Cookies", rarity: "Common" },
-  { id: "gorilla-glue", name: "Gorilla Glue", rarity: "Common" },
-  { id: "purple-haze", name: "Purple Haze", rarity: "Common" }
-  // add the rest freely – filenames must match id
-];
-
-/* =========================
-   GAME STATE
-   ========================= */
+let DECK = [];
+let CARD_BACK = null;
 
 let coins = 100;
 let drawPile = [];
@@ -89,7 +91,21 @@ let hand = [];
 let cardsInPlay = [];
 
 /* =========================
-   CORE FUNCTIONS
+   LOAD DECK.JSON
+   ========================= */
+
+async function loadDeck() {
+  const response = await fetch("data/deck.json");
+  const data = await response.json();
+
+  DECK = data.cards;
+  CARD_BACK = data.cardBack || null;
+
+  console.log("Deck loaded:", DECK.length, "cards");
+}
+
+/* =========================
+   UTILITIES
    ========================= */
 
 function shuffle(array) {
@@ -100,15 +116,19 @@ function updateCoins() {
   document.getElementById("coins").innerText = coins;
 }
 
+/* =========================
+   GAME INIT
+   ========================= */
+
 function initGame() {
-  drawPile = shuffle(DECK);
+  drawPile = shuffle([...DECK]);
   hand = [];
   cardsInPlay = [];
   updateCoins();
 }
 
 /* =========================
-   PACK / ECONOMY LOGIC
+   ECONOMY
    ========================= */
 
 function buyPack() {
@@ -116,15 +136,12 @@ function buyPack() {
     alert("Not enough coins");
     return;
   }
+
   coins -= 20;
   updateCoins();
 
-  drawPile = shuffle([...DECK]);
-  for (let i = 0; i < 10; i++) {
-    if (drawPile.length > 0) {
-      hand.push(drawPile.pop());
-    }
-  }
+  const pack = shuffle([...DECK]).slice(0, 10);
+  hand = pack;
   renderHand();
 }
 
@@ -133,15 +150,16 @@ function betCoins() {
     alert("Not enough coins to bet");
     return;
   }
+
   coins -= 10;
 
-  const win = Math.random() > 0.5;
-  if (win) {
+  if (Math.random() > 0.5) {
     coins += 25;
     alert("You won the bet!");
   } else {
     alert("You lost the bet");
   }
+
   updateCoins();
 }
 
@@ -155,9 +173,9 @@ function renderHand() {
 
   hand.forEach((card, index) => {
     const img = document.createElement("img");
-    img.src = `assets/cards/${card.id}.png`;
+    img.src = card.image;
     img.className = "card";
-    img.title = card.name;
+    img.title = card.name || card.cardTitle;
     img.onclick = () => playCard(index);
     el.appendChild(img);
   });
@@ -169,7 +187,7 @@ function renderCardsInPlay() {
 
   cardsInPlay.forEach(card => {
     const img = document.createElement("img");
-    img.src = `assets/cards/${card.id}.png`;
+    img.src = card.image;
     img.className = "card";
     el.appendChild(img);
   });
@@ -179,23 +197,32 @@ function renderCardsInPlay() {
    GAME FLOW
    ========================= */
 
-function playCard(index) {
+function playCard(handIndex) {
   if (cardsInPlay.length >= 4) {
     alert("Maximum 4 cards in play");
     return;
   }
-  const card = hand.splice(index, 1)[0];
+
+  const card = hand.splice(handIndex, 1)[0];
   cardsInPlay.push(card);
+
   renderHand();
   renderCardsInPlay();
 }
 
 function endTurn() {
-  // Placeholder for opponent + stat logic later
-  alert("Opponent turn (stub)");
+  // Stub for opponent / stat resolution later
+  alert("Opponent turn (mechanics coming later)");
 }
 
-window.onload = initGame;
+/* =========================
+   STARTUP
+   ========================= */
+
+window.onload = async () => {
+  await loadDeck();
+  initGame();
+};
 </script>
 
 </body>
