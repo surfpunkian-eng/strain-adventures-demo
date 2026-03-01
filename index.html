@@ -95,7 +95,7 @@ let cardsInPlay = [];
    ========================= */
 
 async function loadDeck() {
-  const response = await fetch("./data/deck.json");
+  const response = await fetch("/strain-adventures-demo/data/deck.json");
   const data = await response.json();
 
   DECK = data.cards;
@@ -228,3 +228,4 @@ window.onload = async () => {
 </body>
 
 </html>
+
