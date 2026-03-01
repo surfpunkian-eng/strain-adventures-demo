@@ -95,7 +95,7 @@ let cardsInPlay = [];
    ========================= */
 
 async function loadDeck() {
-  const response = await fetch("data/deck.json");
+  const response = await fetch("./data/deck.json");
   const data = await response.json();
 
   DECK = data.cards;
@@ -226,4 +226,5 @@ window.onload = async () => {
 </script>
 
 </body>
+
 </html>
