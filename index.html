@@ -4,7 +4,11 @@
   <meta charset="UTF-8" />
   <title>Strain Adventures – Demo</title>
 
- <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🌿</text></svg>">
+  <!-- ✅ Correct favicon (prevents head parsing break) -->
+  <link rel="icon" href="data:image/svg+xml,
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'>
+    <text y='14' font-size='14'>🌿</text>
+  </svg>">
 
   <style>
     body {
@@ -63,7 +67,7 @@
     button:hover { background: #1c1c1c; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Leaderboard UI */
+    /* ===== Leaderboard ===== */
     .lb-row {
       display: flex;
       gap: 12px;
@@ -116,6 +120,21 @@
       border-radius: 6px;
       font-size: 12px;
     }
+
+    /* ===== Set Gallery ===== */
+    #setGallery {
+      max-height: 520px;
+      overflow: auto;
+      padding-top: 10px;
+    }
+    #setGallery .card { width: 100px; }
+    .row {
+      display:flex;
+      gap:10px;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+    }
   </style>
 </head>
 
@@ -126,4 +145,462 @@
   <div class="zone">
     <strong>Coins:</strong> <span id="coins">0</span>
     <div class="muted">
+      Leaderboard POC: we submit your <b>current coin balance</b> as your score (until match scoring is implemented).
+    </div>
+  </div>
 
+  <div class="zone">
+    <button onclick="buyPack()">Buy Pack (10 cards – 20 coins)</button>
+    <button onclick="betCoins()">Bet 10 coins (50/50)</button>
+    <button onclick="toggleSetGallery()">Show All Cards in Set</button>
+  </div>
+
+  <div class="zone">
+    <h3>Your Hand</h3>
+    <div id="hand" class="cards"></div>
+  </div>
+
+  <!-- ✅ Set Gallery -->
+  <div class="zone" id="setGalleryZone" style="display:none;">
+    <div class="row">
+      <h3 style="margin:0;">All Cards in Set</h3>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <input id="setSearch" class="lb-input" placeholder="Search card name..." maxlength="40">
+        <button onclick="renderSetGallery()">Refresh</button>
+        <button onclick="toggleSetGallery()">Close</button>
+      </div>
+    </div>
+    <div class="muted" id="setCount"></div>
+    <div id="setGallery" class="cards"></div>
+  </div>
+
+  <div class="zone">
+    <h3>Cards in Play (max 4)</h3>
+    <div id="cardsInPlay" class="cards"></div>
+    <button onclick="endTurn()">End Turn</button>
+  </div>
+
+  <!-- ✅ Leaderboard -->
+  <div class="zone" id="leaderboardPanel">
+    <div class="lb-row">
+      <div style="text-align:left;">
+        <strong>Leaderboard</strong>
+        <div class="muted">CheddaBoards (Top 10 shown; Top 50 fetched so “You” is likely found)</div>
+      </div>
+
+      <div>
+        <input id="lbNickname" class="lb-input" placeholder="Your name (max 20 chars)" maxlength="20" />
+        <button id="btnSubmitScore">Submit coins score</button>
+        <button id="btnRefreshLB">Refresh</button>
+      </div>
+    </div>
+
+    <div class="lb-status" id="lbStatus"></div>
+
+    <div class="lb-cols">
+      <div class="lb-col">
+        <h4>Top 10</h4>
+        <ol id="lbTop10"></ol>
+      </div>
+
+      <div class="lb-col">
+        <h4>You</h4>
+        <div id="lbMe">—</div>
+        <div class="muted">Player ID: <code id="lbPlayerId"></code></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   GLOBAL STATE
+   ========================= */
+
+let DECK = [];
+let CARD_BACK = null;
+
+let coins = 100;
+let drawPile = [];
+let hand = [];
+let cardsInPlay = [];
+
+let setGalleryOpen = false;
+
+/* =========================
+   LOAD DECK.JSON
+   ========================= */
+
+async function loadDeck() {
+  // GitHub Pages-safe: prefer relative path. Add fallbacks for older setups.
+  const candidates = [
+    "./data/deck.json",
+    "data/deck.json",
+    "/strain-adventures-demo/data/deck.json"
+  ];
+
+  let lastErr = null;
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+      const data = await response.json();
+
+      DECK = data.cards || [];
+      CARD_BACK = data.cardBack || null;
+
+      console.log("Deck loaded:", DECK.length, "cards from", url);
+      return;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  console.error("Failed to load deck.json:", lastErr);
+  alert("Could not load deck.json. Ensure /data/deck.json exists in the repo.");
+}
+
+/* =========================
+   UTILITIES
+   ========================= */
+
+function shuffle(array) {
+  return [...array].sort(() => Math.random() - 0.5);
+}
+
+function updateCoins() {
+  document.getElementById("coins").innerText = coins;
+  lastKnownScore = coins;
+}
+
+/* =========================
+   GAME INIT
+   ========================= */
+
+function initGame() {
+  drawPile = shuffle([...DECK]);
+  hand = [];
+  cardsInPlay = [];
+  updateCoins();
+}
+
+/* =========================
+   ECONOMY
+   ========================= */
+
+function buyPack() {
+  if (coins < 20) {
+    alert("Not enough coins");
+    return;
+  }
+
+  coins -= 20;
+  updateCoins();
+
+  const pack = shuffle([...DECK]).slice(0, 10);
+  hand = pack;
+  renderHand();
+}
+
+function betCoins() {
+  if (coins < 10) {
+    alert("Not enough coins to bet");
+    return;
+  }
+
+  coins -= 10;
+
+  if (Math.random() > 0.5) {
+    coins += 25;
+    alert("You won the bet!");
+  } else {
+    alert("You lost the bet");
+  }
+
+  updateCoins();
+}
+
+/* =========================
+   RENDERING
+   ========================= */
+
+function renderHand() {
+  const el = document.getElementById("hand");
+  el.innerHTML = "";
+
+  hand.forEach((card, index) => {
+    const img = document.createElement("img");
+    img.src = card.image;
+    img.className = "card";
+    img.title = card.name || card.cardTitle || "Card";
+    img.onclick = () => playCard(index);
+    el.appendChild(img);
+  });
+}
+
+function renderCardsInPlay() {
+  const el = document.getElementById("cardsInPlay");
+  el.innerHTML = "";
+
+  cardsInPlay.forEach(card => {
+    const img = document.createElement("img");
+    img.src = card.image;
+    img.className = "card";
+    img.title = card.name || card.cardTitle || "In play";
+    el.appendChild(img);
+  });
+}
+
+/* =========================
+   GAME FLOW
+   ========================= */
+
+function playCard(handIndex) {
+  if (cardsInPlay.length >= 4) {
+    alert("Maximum 4 cards in play");
+    return;
+  }
+
+  const card = hand.splice(handIndex, 1)[0];
+  cardsInPlay.push(card);
+
+  renderHand();
+  renderCardsInPlay();
+}
+
+function endTurn() {
+  // Stub for opponent / stat resolution later
+  alert("Opponent turn (mechanics coming later)");
+}
+
+/* =========================
+   SHOW ALL CARDS IN SET
+   ========================= */
+
+function toggleSetGallery() {
+  const zone = document.getElementById("setGalleryZone");
+  setGalleryOpen = !setGalleryOpen;
+  zone.style.display = setGalleryOpen ? "block" : "none";
+  if (setGalleryOpen) renderSetGallery();
+}
+
+function renderSetGallery() {
+  const gallery = document.getElementById("setGallery");
+  const countEl = document.getElementById("setCount");
+  const q = (document.getElementById("setSearch")?.value || "").trim().toLowerCase();
+
+  gallery.innerHTML = "";
+
+  if (!DECK || !DECK.length) {
+    countEl.textContent = "Deck not loaded yet.";
+    return;
+  }
+
+  const filtered = DECK.filter(card => {
+    const name = (card.name || card.cardTitle || "").toLowerCase();
+    return !q || name.includes(q);
+  });
+
+  countEl.textContent = `Showing ${filtered.length} of ${DECK.length} cards`;
+
+  filtered.forEach(card => {
+    const img = document.createElement("img");
+    img.src = card.image;
+    img.className = "card";
+    img.title = card.name || card.cardTitle || "Card";
+
+    // Click = quick details (helps your friend talk through categories/abilities)
+    img.onclick = () => {
+      const title = card.name || card.cardTitle || "Card";
+      const rarity = card.rarity ? `Rarity: ${card.rarity}` : "";
+      const ability =
+        card.ability || card.abilities || card.special || card.effect || card.text || "";
+
+      const abilityText = typeof ability === "string"
+        ? ability
+        : (ability ? JSON.stringify(ability, null, 2) : "");
+
+      alert(
+        `${title}\n` +
+        (rarity ? `${rarity}\n` : "") +
+        (abilityText ? `\nAbility / Text:\n${abilityText}` : "")
+      );
+    };
+
+    gallery.appendChild(img);
+  });
+}
+
+/* =========================
+   CHEDDABOARDS INTEGRATION
+   =========================
+   Base URL matches CheddaBoards SDK: https://cheddaboards.com/.netlify/functions/api [1](https://github.com/cheddatech/CheddaBoards-Godot-Api/blob/main/cheddaboards.gd)
+*/
+
+const CHEDDA_BASE = "https://cheddaboards.com/.netlify/functions/api"; // [1](https://github.com/cheddatech/CheddaBoards-Godot-Api/blob/main/cheddaboards.gd)
+const CHEDDA_API_KEY = "cb_strain-adventures_3374400382";
+
+const LB_SORT = "score";
+const LB_FETCH_LIMIT = 50;    // fetch 50 so “You” is likely included
+const LB_DISPLAY_LIMIT = 10;  // show top 10
+
+let lastKnownScore = coins;
+
+function safeUUID() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "p_" + Math.random().toString(36).slice(2) + "_" + Date.now().toString(36);
+}
+
+function getPlayerId() {
+  const k = "strain_player_id";
+  let id = localStorage.getItem(k);
+  if (!id) {
+    id = safeUUID();
+    localStorage.setItem(k, id);
+  }
+  return id;
+}
+
+function setLBStatus(msg) {
+  const el = document.getElementById("lbStatus");
+  if (el) el.textContent = msg || "";
+}
+
+async function chedda(path, { method="GET", body=null } = {}) {
+  const res = await fetch(CHEDDA_BASE + path, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": CHEDDA_API_KEY
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json || json.ok !== true) {
+    const msg = (json && (json.error || (json.data && json.data.error))) || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return json.data;
+}
+
+// Supported: POST /scores (per SDK pattern) [1](https://github.com/cheddatech/CheddaBoards-Godot-Api/blob/main/cheddaboards.gd)
+async function submitCoinsScore() {
+  const nickname = (document.getElementById("lbNickname")?.value || "").trim() || "Player";
+  const payload = {
+    playerId: getPlayerId(),
+    score: Math.max(0, Math.floor(lastKnownScore)),
+    streak: 0,
+    nickname
+  };
+  return chedda("/scores", { method: "POST", body: payload });
+}
+
+// Supported: GET /leaderboard (per SDK pattern) [1](https://github.com/cheddatech/CheddaBoards-Godot-Api/blob/main/cheddaboards.gd)
+async function fetchLeaderboard(limit) {
+  return chedda(`/leaderboard?limit=${limit}&sort=${encodeURIComponent(LB_SORT)}`);
+}
+
+// IMPORTANT: do NOT call /players/{id}/rank (that produced “Unknown endpoint”).
+// Instead: derive “You” from the fetched leaderboard window.
+function findMeInEntries(entries) {
+  const pid = getPlayerId();
+  return (entries || []).find(e => e.playerId === pid);
+}
+
+function renderTop(entries) {
+  const ol = document.getElementById("lbTop10");
+  if (!ol) return;
+  ol.innerHTML = "";
+
+  const top = (entries || []).slice(0, LB_DISPLAY_LIMIT);
+  if (!top.length) {
+    const li = document.createElement("li");
+    li.textContent = "No scores yet — submit one!";
+    ol.appendChild(li);
+    return;
+  }
+
+  top.forEach(e => {
+    const li = document.createElement("li");
+    const name = e.nickname || e.playerId || "Player";
+    const val = (LB_SORT === "streak") ? e.streak : e.score;
+    li.textContent = `${name} — ${val}`;
+    ol.appendChild(li);
+  });
+}
+
+function renderMe(entry) {
+  const el = document.getElementById("lbMe");
+  if (!el) return;
+
+  if (!entry) {
+    el.textContent = `Not found in top ${LB_FETCH_LIMIT} yet — submit a score, then Refresh.`;
+    return;
+  }
+
+  const val = (LB_SORT === "streak") ? entry.streak : entry.score;
+  el.textContent = `Rank #${entry.rank} — ${val} points (${entry.nickname || "You"})`;
+}
+
+async function refreshLeaderboardUI() {
+  setLBStatus("Refreshing leaderboard...");
+  const lb = await fetchLeaderboard(LB_FETCH_LIMIT);
+  const entries = lb.leaderboard || [];
+
+  renderTop(entries);
+  renderMe(findMeInEntries(entries));
+
+  setLBStatus("Leaderboard updated.");
+}
+
+/* =========================
+   STARTUP
+   ========================= */
+
+window.onload = async () => {
+  // show player id (useful during testing)
+  document.getElementById("lbPlayerId").textContent = getPlayerId();
+
+  // restore nickname
+  const nickEl = document.getElementById("lbNickname");
+  const savedNick = localStorage.getItem("strain_nickname") || "";
+  if (nickEl) {
+    nickEl.value = savedNick;
+    nickEl.addEventListener("input", () => localStorage.setItem("strain_nickname", nickEl.value.trim()));
+  }
+
+  // Wire leaderboard buttons
+  document.getElementById("btnSubmitScore").addEventListener("click", async () => {
+    try {
+      setLBStatus("Submitting score...");
+      await submitCoinsScore();
+      setLBStatus("Score submitted. Updating leaderboard...");
+      await refreshLeaderboardUI();
+    } catch (e) {
+      setLBStatus("Error: " + e.message);
+    }
+  });
+
+  document.getElementById("btnRefreshLB").addEventListener("click", async () => {
+    try {
+      await refreshLeaderboardUI();
+    } catch (e) {
+      setLBStatus("Error: " + e.message);
+    }
+  });
+
+  // Live search in gallery
+  document.getElementById("setSearch").addEventListener("input", () => {
+    if (setGalleryOpen) renderSetGallery();
+  });
+
+  // Load deck + init
+  await loadDeck();
+  initGame();
+  renderHand();
+  renderCardsInPlay();
+};
+</script>
+
+</body>
+</html>
